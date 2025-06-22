@@ -1,62 +1,75 @@
-import { useState } from 'react';
+import { useState } from "react";
 
 export default function Home() {
-  const [query, setQuery] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
   const [results, setResults] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  const searchPrices = async () => {
+  const handleSearch = async () => {
+    if (!searchTerm) return;
+
     setLoading(true);
     setResults([]);
+
     try {
       const res = await fetch("https://deploy-render-1g9w.onrender.com/api/scrape", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query })
+        body: JSON.stringify({ query: searchTerm })
       });
+
       const data = await res.json();
-      setResults(data.results);
+      if (data.results) {
+        // Optional: sort results by USD price
+        const sorted = data.results.sort((a: any, b: any) => a.usd_price - b.usd_price);
+        setResults(sorted);
+      } else {
+        alert("No results found.");
+      }
     } catch (err) {
-      console.error("Error fetching data:", err);
+      console.error("❌ Fetch error:", err);
+      alert("Error fetching from backend.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
-    <div style={{ maxWidth: '600px', margin: 'auto', padding: '20px' }}>
-      <h1>Hermès Global Price Comparator</h1>
-      <input
-        style={{ width: '100%', padding: '8px', marginBottom: '10px' }}
-        placeholder="Enter item name or code (e.g., Birkin 25 Epsom)"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-      />
-      <button onClick={searchPrices} disabled={loading || !query}>
-        {loading ? "Loading..." : "Search"}
-      </button>
+    <div style={{ padding: "2rem", fontFamily: "Arial, sans-serif" }}>
+      <h1>Hermès Price Comparator</h1>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          handleSearch();
+        }}
+      >
+        <input
+          type="text"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          placeholder="Search product e.g. Oran sandal"
+          style={{ padding: "0.5rem", width: "300px" }}
+        />
+        <button type="submit" style={{ padding: "0.5rem", marginLeft: "1rem" }}>
+          Search
+        </button>
+      </form>
 
-      {!loading && results.length > 0 && (
-        <table style={{ width: '100%', marginTop: '20px', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr>
-              <th>Country</th>
-              <th>Local Price</th>
-              <th>Price in USD</th>
-              <th>Link</th>
-            </tr>
-          </thead>
-          <tbody>
-            {results.map((r, i) => (
-              <tr key={i}>
-                <td>{r.country}</td>
-                <td>{r.local_price}</td>
-                <td>${r.usd_price.toLocaleString()}</td>
-                <td><a href={r.link} target="_blank">View</a></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+      {loading && <p>🔄 Searching...</p>}
+
+      <div style={{ marginTop: "2rem" }}>
+        {results.map((item: any, i: number) => (
+          <div key={i} style={{ marginBottom: "1rem", borderBottom: "1px solid #ccc", paddingBottom: "1rem" }}>
+            <h3>{item.name}</h3>
+            <p>
+              <strong>{item.country}</strong>: {item.local_price} → <strong>${item.usd_price}</strong>
+            </p>
+            <a href={item.link} target="_blank" rel="noopener noreferrer">
+              View on Hermès
+            </a>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
