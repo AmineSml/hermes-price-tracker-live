@@ -9,7 +9,7 @@ export default function Home() {
     setLoading(true);
     setResults([]);
     try {
-      const res = await fetch("https://deploy-render-1g9w.onrender.com/api/compare", {
+      const res = await fetch("https://deploy-render-1g9w.onrender.com/api/scrape", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query })
